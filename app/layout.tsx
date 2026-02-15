@@ -7,8 +7,8 @@ const _inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const _jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' })
 
 export const metadata: Metadata = {
-  title: 'PenguimPay - API Documentation',
-  description: 'Complete API documentation for PenguimPay payment platform. Test endpoints, manage authentication, and integrate payment solutions.',
+  title: 'penguinPay - API Documentation',
+  description: 'Complete API documentation for penguinPay payment platform. Test endpoints, manage authentication, and integrate payment solutions.',
 }
 
 export default function RootLayout({

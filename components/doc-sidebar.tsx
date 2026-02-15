@@ -79,11 +79,11 @@ export function DocSidebar({
         <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
           <img
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logotipo%20Design%20%285%29-t3S2Z5N6XGgW6o3oU6VuONDsWAX3hP.png"
-            alt="PenguimPay Logo"
+            alt="penguinPay Logo"
             className="h-10 w-10 rounded-lg object-contain bg-sidebar-accent"
           />
           <div>
-            <h1 className="text-base font-semibold text-sidebar-primary-foreground">PenguimPay</h1>
+            <h1 className="text-base font-semibold text-sidebar-primary-foreground">penguinPay</h1>
             <span className="text-xs text-sidebar-foreground/60">API Documentation</span>
           </div>
           <button
@@ -192,7 +192,7 @@ export function DocSidebar({
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-sidebar-border text-[10px] text-sidebar-foreground/40">
-          PenguimPay API v1.0
+          penguinPay API v1.0
         </div>
       </aside>
     </>
