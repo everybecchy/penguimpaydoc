@@ -1,3 +1,17 @@
+export interface CodeExample {
+  language: string
+  label: string
+  code: string
+}
+
+export interface FormField {
+  key: string
+  label: string
+  placeholder: string
+  type: "text" | "number"
+  nested?: string
+}
+
 export interface ApiEndpoint {
   id: string
   name: string
@@ -8,6 +22,9 @@ export interface ApiEndpoint {
   body?: string
   queryParams?: { key: string; value: string }[]
   isInfoOnly?: boolean
+  codeExamples?: CodeExample[]
+  formFields?: FormField[]
+  webhookPayloads?: { title: string; payload: string }[]
 }
 
 export interface ApiCategory {
@@ -26,7 +43,7 @@ export const apiCategories: ApiCategory[] = [
         path: "/api/*",
         isInfoOnly: true,
         description:
-          "Todas as rotas protegidas da PenguinPay utilizam autenticacao via Bearer Token. Voce deve enviar sua publickey no header Authorization de todas as requisicoes no formato:\n\nAuthorization: Bearer SUA_PUBLIC_KEY\n\nA publickey e fornecida no painel da PenguinPay ao criar sua conta de integrador. Nao e necessario fazer login ou gerar token JWT - basta usar a publickey diretamente como Bearer Token em todas as chamadas da API.",
+          "Todas as rotas da API PenguimPay utilizam autenticacao via Bearer Token.\n\nVoce deve enviar sua publickey no header Authorization de todas as requisicoes, no seguinte formato:\n\nAuthorization: Bearer SUA_PUBLIC_KEY\n\nA publickey e fornecida no painel da PenguimPay ao criar sua conta de integrador.\n\nNao e necessario fazer login ou gerar token JWT — basta usar a publickey diretamente como Bearer Token em todas as chamadas.\n\nEndpoint base: https://api.penguimpay.com\n\nExemplo de header obrigatorio em todas as requests:\n\n  Authorization: Bearer pk_sua_chave_aqui\n  Content-Type: application/json",
         headers: [
           { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
           { key: "Content-Type", value: "application/json" },
@@ -39,53 +56,402 @@ export const apiCategories: ApiCategory[] = [
     endpoints: [
       {
         id: "tx-pix-in",
-        name: "Gerar PIX In (Recebimento)",
+        name: "Gerar PIX In (Deposito)",
         method: "POST" as const,
-        path: "/api/payments/initiate",
+        path: "/api/external/pix/deposit",
         description:
-          "Gera um pagamento PIX para receber valores. Envia os dados do cliente e o metodo de pagamento PIX. O retorno inclui o QR Code e a chave copia-e-cola para o pagador efetuar a transferencia. O status da transacao pode ser acompanhado via webhook ou pelo endpoint de status.",
+          "Gera uma cobranca PIX para receber valores. Envie os dados do cliente (nome, CPF e email) junto com o valor desejado. O retorno inclui o QR Code e a chave copia-e-cola para o pagador efetuar a transferencia.\n\nO status da transacao pode ser acompanhado via webhook ou pelo endpoint de consulta de status.",
         headers: [
           { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
           { key: "Content-Type", value: "application/json" },
         ],
+        formFields: [
+          { key: "amount", label: "Valor (R$)", placeholder: "0.50", type: "number" },
+          { key: "name", label: "Nome Completo", placeholder: "Penguim Pay service payment", type: "text", nested: "client" },
+          { key: "document", label: "CPF", placeholder: "000.000.000-00", type: "text", nested: "client" },
+          { key: "email", label: "E-mail", placeholder: "seuemail@penguimpay.com", type: "text", nested: "client" },
+        ],
         body: JSON.stringify(
           {
-            productId: "produto_id_aqui",
-            customerData: {
-              name: "Joao Silva",
-              email: "joao@email.com",
-              number: "11999999999",
-              document: "123.456.789-00",
-              zipCode: "01234-567",
-              adress: "Rua Exemplo, 123",
-              city: "Sao Paulo",
-              state: "SP",
+            amount: 0.50,
+            client: {
+              name: "Penguim Pay service payment",
+              document: "000.000.000-00",
+              email: "seuemail@penguimpay.com",
             },
-            paymentMethod: "PIX",
           },
           null,
           2
         ),
+        codeExamples: [
+          {
+            language: "curl",
+            label: "cURL",
+            code: `curl --location 'https://api.penguimpay.com/api/external/pix/deposit' \\
+--header 'Authorization: Bearer SUA_PUBLIC_KEY' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "amount": 0.50,
+    "client": {
+      "name": "Penguim Pay service payment",
+      "document": "000.000.000-00",
+      "email": "seuemail@penguimpay.com"
+    }
+  }'`,
+          },
+          {
+            language: "javascript",
+            label: "JavaScript",
+            code: `const response = await fetch('https://api.penguimpay.com/api/external/pix/deposit', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer SUA_PUBLIC_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 0.50,
+    client: {
+      name: 'Penguim Pay service payment',
+      document: '000.000.000-00',
+      email: 'seuemail@penguimpay.com'
+    }
+  })
+});
+
+const data = await response.json();
+console.log(data);`,
+          },
+          {
+            language: "node",
+            label: "Node.js (Axios)",
+            code: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://api.penguimpay.com/api/external/pix/deposit',
+  {
+    amount: 0.50,
+    client: {
+      name: 'Penguim Pay service payment',
+      document: '000.000.000-00',
+      email: 'seuemail@penguimpay.com'
+    }
+  },
+  {
+    headers: {
+      'Authorization': 'Bearer SUA_PUBLIC_KEY',
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+console.log(data);`,
+          },
+          {
+            language: "php",
+            label: "PHP",
+            code: `<?php
+
+$ch = curl_init();
+
+$payload = json_encode([
+    'amount' => 0.50,
+    'client' => [
+        'name' => 'Penguim Pay service payment',
+        'document' => '000.000.000-00',
+        'email' => 'seuemail@penguimpay.com'
+    ]
+]);
+
+curl_setopt_array($ch, [
+    CURLOPT_URL => 'https://api.penguimpay.com/api/external/pix/deposit',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $payload,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer SUA_PUBLIC_KEY',
+        'Content-Type: application/json'
+    ],
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$data = json_decode($response, true);
+print_r($data);`,
+          },
+          {
+            language: "csharp",
+            label: "C#",
+            code: `using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+
+var client = new HttpClient();
+client.DefaultRequestHeaders.Add("Authorization", "Bearer SUA_PUBLIC_KEY");
+
+var payload = new {
+    amount = 0.50,
+    client = new {
+        name = "Penguim Pay service payment",
+        document = "000.000.000-00",
+        email = "seuemail@penguimpay.com"
+    }
+};
+
+var content = new StringContent(
+    JsonSerializer.Serialize(payload),
+    Encoding.UTF8,
+    "application/json"
+);
+
+var response = await client.PostAsync(
+    "https://api.penguimpay.com/api/external/pix/deposit",
+    content
+);
+
+var result = await response.Content.ReadAsStringAsync();
+Console.WriteLine(result);`,
+          },
+        ],
       },
       {
         id: "tx-pix-out",
-        name: "Gerar PIX Out (Saque/Envio)",
+        name: "Gerar PIX Out (Saque)",
         method: "POST" as const,
-        path: "/api/withdrawals",
+        path: "/api/external/withdraw/pix",
         description:
-          "Solicita um PIX Out (saque ou envio de valores) do saldo disponivel na carteira. Informe o valor e a chave PIX de destino. O saque sera processado e o status pode ser acompanhado via webhook. O valor liquido sera debitado da carteira do seller apos descontar as taxas aplicaveis.",
+          "Solicita um PIX Out (saque/envio de valores) do saldo disponivel. Informe o valor, a chave PIX de destino e o tipo da chave.\n\nTipos de chave PIX aceitos: CPF, CNPJ, EMAIL, PHONE, EVP (chave aleatoria).\n\nO saque sera processado e o status pode ser acompanhado via webhook.",
         headers: [
           { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
           { key: "Content-Type", value: "application/json" },
         ],
+        formFields: [
+          { key: "amount", label: "Valor (R$)", placeholder: "50.00", type: "number" },
+          { key: "pix_key", label: "Chave PIX", placeholder: "11999999999", type: "text" },
+          { key: "pix_key_type", label: "Tipo da Chave", placeholder: "PHONE", type: "text" },
+        ],
         body: JSON.stringify(
           {
-            amount: 150.5,
-            pixKey: "123.456.789-09",
+            amount: 50.00,
+            pix_key: "11999999999",
+            pix_key_type: "PHONE",
           },
           null,
           2
         ),
+        codeExamples: [
+          {
+            language: "curl",
+            label: "cURL",
+            code: `curl --location 'https://api.penguimpay.com/api/external/withdraw/pix' \\
+--header 'Authorization: Bearer SUA_PUBLIC_KEY' \\
+--header 'Content-Type: application/json' \\
+--data '{
+    "amount": 50.00,
+    "pix_key": "11999999999",
+    "pix_key_type": "PHONE"
+  }'`,
+          },
+          {
+            language: "javascript",
+            label: "JavaScript",
+            code: `const response = await fetch('https://api.penguimpay.com/api/external/withdraw/pix', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer SUA_PUBLIC_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 50.00,
+    pix_key: '11999999999',
+    pix_key_type: 'PHONE'
+  })
+});
+
+const data = await response.json();
+console.log(data);`,
+          },
+          {
+            language: "node",
+            label: "Node.js (Axios)",
+            code: `const axios = require('axios');
+
+const { data } = await axios.post(
+  'https://api.penguimpay.com/api/external/withdraw/pix',
+  {
+    amount: 50.00,
+    pix_key: '11999999999',
+    pix_key_type: 'PHONE'
+  },
+  {
+    headers: {
+      'Authorization': 'Bearer SUA_PUBLIC_KEY',
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+console.log(data);`,
+          },
+          {
+            language: "php",
+            label: "PHP",
+            code: `<?php
+
+$ch = curl_init();
+
+$payload = json_encode([
+    'amount' => 50.00,
+    'pix_key' => '11999999999',
+    'pix_key_type' => 'PHONE'
+]);
+
+curl_setopt_array($ch, [
+    CURLOPT_URL => 'https://api.penguimpay.com/api/external/withdraw/pix',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $payload,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer SUA_PUBLIC_KEY',
+        'Content-Type: application/json'
+    ],
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$data = json_decode($response, true);
+print_r($data);`,
+          },
+          {
+            language: "csharp",
+            label: "C#",
+            code: `using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+
+var client = new HttpClient();
+client.DefaultRequestHeaders.Add("Authorization", "Bearer SUA_PUBLIC_KEY");
+
+var payload = new {
+    amount = 50.00,
+    pix_key = "11999999999",
+    pix_key_type = "PHONE"
+};
+
+var content = new StringContent(
+    JsonSerializer.Serialize(payload),
+    Encoding.UTF8,
+    "application/json"
+);
+
+var response = await client.PostAsync(
+    "https://api.penguimpay.com/api/external/withdraw/pix",
+    content
+);
+
+var result = await response.Content.ReadAsStringAsync();
+Console.WriteLine(result);`,
+          },
+        ],
+      },
+      {
+        id: "tx-status",
+        name: "Consultar Status",
+        method: "GET" as const,
+        path: "/api/external/pix/deposit/:transactionId",
+        description:
+          "Consulta o status de uma transacao PIX pelo ID da transacao. Retorna o estado atual (PENDING, APPROVED, EXPIRED, FAILED, REFUNDED) e os detalhes do pagamento.\n\nSubstitua :transactionId pelo ID recebido na criacao do PIX.",
+        headers: [
+          { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
+        ],
+        formFields: [
+          { key: "transactionId", label: "Transaction ID", placeholder: "uuid-da-transacao", type: "text" },
+        ],
+        codeExamples: [
+          {
+            language: "curl",
+            label: "cURL",
+            code: `curl --location 'https://api.penguimpay.com/api/external/pix/deposit/SEU_TRANSACTION_ID' \\
+--header 'Authorization: Bearer SUA_PUBLIC_KEY'`,
+          },
+          {
+            language: "javascript",
+            label: "JavaScript",
+            code: `const transactionId = 'SEU_TRANSACTION_ID';
+
+const response = await fetch(
+  \`https://api.penguimpay.com/api/external/pix/deposit/\${transactionId}\`,
+  {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer SUA_PUBLIC_KEY'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data);`,
+          },
+          {
+            language: "node",
+            label: "Node.js (Axios)",
+            code: `const axios = require('axios');
+
+const transactionId = 'SEU_TRANSACTION_ID';
+
+const { data } = await axios.get(
+  \`https://api.penguimpay.com/api/external/pix/deposit/\${transactionId}\`,
+  {
+    headers: {
+      'Authorization': 'Bearer SUA_PUBLIC_KEY'
+    }
+  }
+);
+
+console.log(data);`,
+          },
+          {
+            language: "php",
+            label: "PHP",
+            code: `<?php
+
+$transactionId = 'SEU_TRANSACTION_ID';
+
+$ch = curl_init();
+
+curl_setopt_array($ch, [
+    CURLOPT_URL => "https://api.penguimpay.com/api/external/pix/deposit/{$transactionId}",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer SUA_PUBLIC_KEY'
+    ],
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$data = json_decode($response, true);
+print_r($data);`,
+          },
+          {
+            language: "csharp",
+            label: "C#",
+            code: `using System.Net.Http;
+
+var client = new HttpClient();
+client.DefaultRequestHeaders.Add("Authorization", "Bearer SUA_PUBLIC_KEY");
+
+var transactionId = "SEU_TRANSACTION_ID";
+
+var response = await client.GetAsync(
+    $"https://api.penguimpay.com/api/external/pix/deposit/{transactionId}"
+);
+
+var result = await response.Content.ReadAsStringAsync();
+Console.WriteLine(result);`,
+          },
+        ],
       },
       {
         id: "tx-compliance",
@@ -94,7 +460,7 @@ export const apiCategories: ApiCategory[] = [
         path: "/api/compliance/*",
         isInfoOnly: true,
         description:
-          "A PenguinPay possui endpoints de compliance para gerenciar a seguranca das transacoes. Os endpoints disponiveis sao:\n\n- GET /api/compliance/stats - Retorna estatisticas gerais de compliance\n- GET /api/compliance/under-review - Lista transacoes em analise\n- GET /api/compliance/fraudulent - Lista transacoes marcadas como fraude\n- GET /api/compliance/refunded - Lista transacoes estornadas (aceita ?page=1&limit=10)\n- POST /api/compliance/flag - Marca transacao para analise (body: transactionId, reason)\n- POST /api/compliance/approve - Aprova transacao em analise (body: transactionId)\n- POST /api/compliance/reject - Rejeita transacao em analise (body: transactionId, reason)\n- POST /api/compliance/refund - Estorna transacao (body: transactionId, reason)\n\nTodos os endpoints de compliance exigem o header Authorization: Bearer SUA_PUBLIC_KEY. Os endpoints POST de flag, approve, reject e refund exigem permissao de admin.",
+          "A PenguimPay possui endpoints de compliance para gerenciar a seguranca das transacoes. Os endpoints disponiveis sao:\n\n- GET /api/compliance/stats - Retorna estatisticas gerais de compliance\n- GET /api/compliance/under-review - Lista transacoes em analise\n- GET /api/compliance/fraudulent - Lista transacoes marcadas como fraude\n- GET /api/compliance/refunded - Lista transacoes estornadas (aceita ?page=1&limit=10)\n- POST /api/compliance/flag - Marca transacao para analise (body: transactionId, reason)\n- POST /api/compliance/approve - Aprova transacao em analise (body: transactionId)\n- POST /api/compliance/reject - Rejeita transacao em analise (body: transactionId, reason)\n- POST /api/compliance/refund - Estorna transacao (body: transactionId, reason)\n\nTodos os endpoints de compliance exigem o header Authorization: Bearer SUA_PUBLIC_KEY. Os endpoints POST de flag, approve, reject e refund exigem permissao de admin.",
         headers: [
           { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
           { key: "Content-Type", value: "application/json" },
@@ -112,23 +478,54 @@ export const apiCategories: ApiCategory[] = [
         path: "/sua-url-de-webhook",
         isInfoOnly: true,
         description:
-          "A PenguinPay envia notificacoes automaticas para a URL configurada no seu webhook sempre que o status de uma transacao muda. O payload e enviado via POST com Content-Type application/json. Os principais eventos sao: APPROVED (pagamento confirmado), PENDING (aguardando pagamento), EXPIRED (expirado), REFUNDED (estornado), FAILED (falha). Voce deve responder com status 200 para confirmar o recebimento. Caso contrario, a PenguinPay fara ate 3 tentativas de reenvio.",
+          "A PenguimPay envia notificacoes automaticas para a URL configurada no seu webhook sempre que o status de uma transacao muda. O payload e enviado via POST com Content-Type application/json.\n\nVoce deve responder com status 200 para confirmar o recebimento. Caso contrario, a PenguimPay fara ate 3 tentativas de reenvio.\n\nExistem dois tipos de eventos principais: PAYMENT (quando um PIX In e confirmado) e WITHDRAWAL (quando um PIX Out e processado).",
         headers: [{ key: "Content-Type", value: "application/json" }],
-        body: JSON.stringify(
+        webhookPayloads: [
           {
-            transactionId: "tx_123",
-            status: "APPROVED",
-            externalTransactionId: "versell_456",
-            metadata: {
-              amount: 99.9,
-              currency: "BRL",
-              paymentMethod: "PIX",
-              timestamp: "2024-01-15T10:30:00Z",
-            },
+            title: "Retorno de Pagamentos (PIX In)",
+            payload: JSON.stringify(
+              {
+                event: "PAYMENT",
+                timestamp: "2024-01-15T10:30:00.000Z",
+                data: {
+                  transactionId: "uuid-da-transacao",
+                  externalId: "123456",
+                  amount: 100.50,
+                  status: "PAID_OUT",
+                  paidAt: "2024-01-15T10:30:00.000Z",
+                  paymentMethod: "PIX",
+                  customer: {
+                    name: "Joao Silva",
+                    document: "123***789",
+                  },
+                  endToEnd: "E12345678901234567890",
+                },
+              },
+              null,
+              2
+            ),
           },
-          null,
-          2
-        ),
+          {
+            title: "Retorno de Saques (PIX Out)",
+            payload: JSON.stringify(
+              {
+                event: "WITHDRAWAL",
+                timestamp: "2024-01-15T10:30:00.000Z",
+                data: {
+                  transactionId: "uuid-da-transacao",
+                  externalId: "789012",
+                  amount: 50.00,
+                  status: "PAID_OUT",
+                  processedAt: "2024-01-15T10:30:00.000Z",
+                  pixKey: "11999999999",
+                  endToEnd: "E98765432109876543210",
+                },
+              },
+              null,
+              2
+            ),
+          },
+        ],
       },
     ],
   },
