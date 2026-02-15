@@ -1,4 +1,4 @@
-import { Shield, ArrowLeftRight, Bell, FileCheck } from "lucide-react"
+import { Shield, ArrowLeftRight, Bell, Lock } from "lucide-react"
 
 export function DocWelcome() {
   return (
@@ -9,12 +9,12 @@ export function DocWelcome() {
           <div className="flex items-center gap-4 mb-4">
             <img
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logotipo%20Design%20%285%29-t3S2Z5N6XGgW6o3oU6VuONDsWAX3hP.png"
-              alt="PenguinPay Logo"
+              alt="PenguimPay Logo"
               className="h-16 w-16 rounded-xl object-contain"
             />
             <div>
               <h1 className="text-3xl font-bold text-card-foreground text-balance">
-                PenguinPay API
+                PenguimPay API
               </h1>
               <p className="text-muted-foreground text-sm">
                 v1.0 - Plataforma de Pagamentos
@@ -22,10 +22,10 @@ export function DocWelcome() {
             </div>
           </div>
           <p className="text-muted-foreground leading-relaxed max-w-2xl text-pretty">
-            Bem-vindo a documentacao da API PenguinPay.
-            Aqui voce encontra os endpoints para gerar PIX In (recebimentos),
-            PIX Out (saques), gerenciar webhooks e compliance.
-            Insira seu Bearer Token na sidebar para testar os endpoints diretamente.
+            Bem-vindo a documentacao da API PenguimPay.
+            Aqui voce encontra os endpoints para gerar PIX In (depositos),
+            PIX Out (saques), consultar status, gerenciar compliance e configurar webhooks.
+            Insira sua publickey no campo Bearer Token na sidebar para testar os endpoints diretamente.
           </p>
         </div>
       </div>
@@ -34,15 +34,14 @@ export function DocWelcome() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-5 flex gap-4">
           <div className="rounded-lg bg-accent/10 p-2.5 h-fit">
-            <Shield className="h-5 w-5 text-accent" />
+            <Lock className="h-5 w-5 text-accent" />
           </div>
           <div>
             <h3 className="font-semibold text-card-foreground text-sm mb-1">
               Authentication
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Autentique via POST /api/auth/login com email e senha.
-              O token JWT retornado deve ser enviado no header Authorization de todas as requests.
+              Use sua publickey diretamente como Bearer Token em todas as chamadas. Sem necessidade de login ou JWT.
             </p>
           </div>
         </div>
@@ -53,11 +52,10 @@ export function DocWelcome() {
           </div>
           <div>
             <h3 className="font-semibold text-card-foreground text-sm mb-1">
-              PIX In / PIX Out
+              Transactions
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Gere cobranças PIX para receber valores e solicite saques PIX
-              para enviar valores a partir do saldo disponivel.
+              Gere PIX In (deposito), PIX Out (saque), consulte status de transacoes e gerencie compliance.
             </p>
           </div>
         </div>
@@ -79,15 +77,18 @@ export function DocWelcome() {
 
         <div className="rounded-xl border border-border bg-card p-5 flex gap-4">
           <div className="rounded-lg bg-amber-500/10 p-2.5 h-fit">
-            <FileCheck className="h-5 w-5 text-amber-500" />
+            <Shield className="h-5 w-5 text-amber-500" />
           </div>
           <div>
             <h3 className="font-semibold text-card-foreground text-sm mb-1">
-              Compliance
+              Base URL
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Gerencie analise de transacoes, marcacao de fraudes,
-              estornos e aprovacoes.
+              Todas as chamadas utilizam{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-mono text-card-foreground">
+                https://api.penguimpay.com
+              </code>{" "}
+              como base.
             </p>
           </div>
         </div>
@@ -104,7 +105,7 @@ export function DocWelcome() {
               1
             </span>
             <p>
-              Insira seu <strong className="text-card-foreground">Bearer Token</strong> no campo da sidebar esquerda. Caso nao tenha, use o endpoint de Authentication para obter um.
+              Obtenha sua <strong className="text-card-foreground">publickey</strong> no painel da PenguimPay ao criar sua conta de integrador.
             </p>
           </div>
           <div className="flex gap-3">
@@ -112,10 +113,7 @@ export function DocWelcome() {
               2
             </span>
             <p>
-              Configure a <strong className="text-card-foreground">Base URL</strong> na sidebar. Em producao use{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-mono text-card-foreground">
-                https://app.penguimpay.com
-              </code>
+              Insira a publickey no campo <strong className="text-card-foreground">Bearer Token</strong> na sidebar esquerda. Ela sera usada automaticamente em todas as requests.
             </p>
           </div>
           <div className="flex gap-3">
@@ -123,10 +121,24 @@ export function DocWelcome() {
               3
             </span>
             <p>
-              Clique em qualquer endpoint na sidebar para ver os detalhes e use o botao <strong className="text-card-foreground">&quot;Enviar Request&quot;</strong> para testar diretamente.
+              Selecione um endpoint na sidebar, copie os exemplos de codigo na sua linguagem ou clique em <strong className="text-card-foreground">&quot;Enviar Request&quot;</strong> para testar diretamente.
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Auth Header Example */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-card-foreground text-sm mb-3">
+          Header de Autenticacao
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Todas as requisicoes devem incluir o seguinte header com sua publickey:
+        </p>
+        <pre className="rounded-lg bg-[hsl(213,60%,10%)] p-4 text-xs font-mono text-[hsl(210,20%,80%)] overflow-x-auto">
+{`Authorization: Bearer pk_sua_chave_aqui
+Content-Type: application/json`}
+        </pre>
       </div>
 
       {/* Status Codes */}
