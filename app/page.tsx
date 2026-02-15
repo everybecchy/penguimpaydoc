@@ -8,7 +8,7 @@ import { apiCategories, flattenEndpoints, type ApiEndpoint } from "@/lib/api-dat
 
 export default function DocsPage() {
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null)
-  const [baseUrl, setBaseUrl] = useState("https://app.penguimpay.com")
+  const [baseUrl, setBaseUrl] = useState("https://api.penguimpay.com")
   const [apiKey, setApiKey] = useState("")
   const [mobileOpen, setMobileOpen] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -69,6 +69,7 @@ export default function DocsPage() {
                 endpoint={selectedEndpoint}
                 baseUrl={baseUrl}
                 apiKey={apiKey}
+                onApiKeyChange={setApiKey}
               />
             </div>
           ) : (
