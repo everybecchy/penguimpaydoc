@@ -482,7 +482,7 @@ Console.WriteLine(result);`,
         headers: [{ key: "Content-Type", value: "application/json" }],
         webhookPayloads: [
           {
-            title: "Retorno de Pagamentos (PIX In)",
+            title: "Retorno Pagamentos (PIX In)",
             payload: JSON.stringify(
               {
                 event: "PAYMENT",
@@ -495,7 +495,7 @@ Console.WriteLine(result);`,
                   paidAt: "2024-01-15T10:30:00.000Z",
                   paymentMethod: "PIX",
                   customer: {
-                    name: "Joao Silva",
+                    name: "Jo\u00e3o Silva",
                     document: "123***789",
                   },
                   endToEnd: "E12345678901234567890",
@@ -506,7 +506,7 @@ Console.WriteLine(result);`,
             ),
           },
           {
-            title: "Retorno de Saques (PIX Out)",
+            title: "Retorno Recebimentos (PIX Out)",
             payload: JSON.stringify(
               {
                 event: "WITHDRAWAL",
