@@ -26,7 +26,7 @@ export const apiCategories: ApiCategory[] = [
         path: "/api/*",
         isInfoOnly: true,
         description:
-          "Todas as rotas protegidas da penguinPay utilizam autenticacao via Bearer Token. Voce deve enviar sua publickey no header Authorization de todas as requisicoes no formato:\n\nAuthorization: Bearer SUA_PUBLIC_KEY\n\nA publickey e fornecida no painel da penguinPay ao criar sua conta de integrador. Nao e necessario fazer login ou gerar token JWT - basta usar a publickey diretamente como Bearer Token em todas as chamadas da API.",
+          "Todas as rotas protegidas da PenguinPay utilizam autenticacao via Bearer Token. Voce deve enviar sua publickey no header Authorization de todas as requisicoes no formato:\n\nAuthorization: Bearer SUA_PUBLIC_KEY\n\nA publickey e fornecida no painel da PenguinPay ao criar sua conta de integrador. Nao e necessario fazer login ou gerar token JWT - basta usar a publickey diretamente como Bearer Token em todas as chamadas da API.",
         headers: [
           { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
           { key: "Content-Type", value: "application/json" },
@@ -94,7 +94,7 @@ export const apiCategories: ApiCategory[] = [
         path: "/api/compliance/*",
         isInfoOnly: true,
         description:
-          "A penguinPay possui endpoints de compliance para gerenciar a seguranca das transacoes. Os endpoints disponiveis sao:\n\n- GET /api/compliance/stats - Retorna estatisticas gerais de compliance\n- GET /api/compliance/under-review - Lista transacoes em analise\n- GET /api/compliance/fraudulent - Lista transacoes marcadas como fraude\n- GET /api/compliance/refunded - Lista transacoes estornadas (aceita ?page=1&limit=10)\n- POST /api/compliance/flag - Marca transacao para analise (body: transactionId, reason)\n- POST /api/compliance/approve - Aprova transacao em analise (body: transactionId)\n- POST /api/compliance/reject - Rejeita transacao em analise (body: transactionId, reason)\n- POST /api/compliance/refund - Estorna transacao (body: transactionId, reason)\n\nTodos os endpoints de compliance exigem o header Authorization: Bearer SUA_PUBLIC_KEY. Os endpoints POST de flag, approve, reject e refund exigem permissao de admin.",
+          "A PenguinPay possui endpoints de compliance para gerenciar a seguranca das transacoes. Os endpoints disponiveis sao:\n\n- GET /api/compliance/stats - Retorna estatisticas gerais de compliance\n- GET /api/compliance/under-review - Lista transacoes em analise\n- GET /api/compliance/fraudulent - Lista transacoes marcadas como fraude\n- GET /api/compliance/refunded - Lista transacoes estornadas (aceita ?page=1&limit=10)\n- POST /api/compliance/flag - Marca transacao para analise (body: transactionId, reason)\n- POST /api/compliance/approve - Aprova transacao em analise (body: transactionId)\n- POST /api/compliance/reject - Rejeita transacao em analise (body: transactionId, reason)\n- POST /api/compliance/refund - Estorna transacao (body: transactionId, reason)\n\nTodos os endpoints de compliance exigem o header Authorization: Bearer SUA_PUBLIC_KEY. Os endpoints POST de flag, approve, reject e refund exigem permissao de admin.",
         headers: [
           { key: "Authorization", value: "Bearer SUA_PUBLIC_KEY" },
           { key: "Content-Type", value: "application/json" },
@@ -112,7 +112,7 @@ export const apiCategories: ApiCategory[] = [
         path: "/sua-url-de-webhook",
         isInfoOnly: true,
         description:
-          "A penguinPay envia notificacoes automaticas para a URL configurada no seu webhook sempre que o status de uma transacao muda. O payload e enviado via POST com Content-Type application/json. Os principais eventos sao: APPROVED (pagamento confirmado), PENDING (aguardando pagamento), EXPIRED (expirado), REFUNDED (estornado), FAILED (falha). Voce deve responder com status 200 para confirmar o recebimento. Caso contrario, a penguinPay fara ate 3 tentativas de reenvio.",
+          "A PenguinPay envia notificacoes automaticas para a URL configurada no seu webhook sempre que o status de uma transacao muda. O payload e enviado via POST com Content-Type application/json. Os principais eventos sao: APPROVED (pagamento confirmado), PENDING (aguardando pagamento), EXPIRED (expirado), REFUNDED (estornado), FAILED (falha). Voce deve responder com status 200 para confirmar o recebimento. Caso contrario, a PenguinPay fara ate 3 tentativas de reenvio.",
         headers: [{ key: "Content-Type", value: "application/json" }],
         body: JSON.stringify(
           {

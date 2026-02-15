@@ -9,12 +9,12 @@ export function DocWelcome() {
           <div className="flex items-center gap-4 mb-4">
             <img
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logotipo%20Design%20%285%29-t3S2Z5N6XGgW6o3oU6VuONDsWAX3hP.png"
-              alt="penguinPay Logo"
+              alt="PenguinPay Logo"
               className="h-16 w-16 rounded-xl object-contain"
             />
             <div>
               <h1 className="text-3xl font-bold text-card-foreground text-balance">
-                penguinPay API
+                PenguinPay API
               </h1>
               <p className="text-muted-foreground text-sm">
                 v1.0 - Plataforma de Pagamentos
@@ -22,7 +22,7 @@ export function DocWelcome() {
             </div>
           </div>
           <p className="text-muted-foreground leading-relaxed max-w-2xl text-pretty">
-            Bem-vindo a documentacao da API penguinPay.
+            Bem-vindo a documentacao da API PenguinPay.
             Aqui voce encontra os endpoints para gerar PIX In (recebimentos),
             PIX Out (saques), gerenciar webhooks e compliance.
             Insira seu Bearer Token na sidebar para testar os endpoints diretamente.
@@ -114,7 +114,7 @@ export function DocWelcome() {
             <p>
               Configure a <strong className="text-card-foreground">Base URL</strong> na sidebar. Em producao use{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-mono text-card-foreground">
-                https://app.penguinpay.com
+                https://app.penguimpay.com
               </code>
             </p>
           </div>
