@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Copy, Check, Play, Loader2, ChevronDown, ChevronUp, Key, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMethodBg, type ApiEndpoint } from "@/lib/api-data"
@@ -21,8 +21,57 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
   const [copied, setCopied] = useState<string | null>(null)
   const [showHeaders, setShowHeaders] = useState(false)
   const [showResponse, setShowResponse] = useState(false)
+  const [activeCodeTab, setActiveCodeTab] = useState(0)
+  const [formValues, setFormValues] = useState<Record<string, string>>({})
 
-  const fullUrl = buildUrl(baseUrl, endpoint)
+  // Initialize form values from body
+  useEffect(() => {
+    if (endpoint.formFields && endpoint.body) {
+      try {
+        const parsed = JSON.parse(endpoint.body)
+        const values: Record<string, string> = {}
+        for (const field of endpoint.formFields) {
+          if (field.nested) {
+            values[field.key] = parsed[field.nested]?.[field.key]?.toString() || ""
+          } else {
+            values[field.key] = parsed[field.key]?.toString() || ""
+          }
+        }
+        setFormValues(values)
+      } catch {
+        // ignore
+      }
+    }
+  }, [endpoint.id, endpoint.formFields, endpoint.body])
+
+  // Build body from form values
+  const updateBodyFromForm = useCallback(
+    (key: string, value: string) => {
+      const newValues = { ...formValues, [key]: value }
+      setFormValues(newValues)
+
+      if (!endpoint.formFields) return
+
+      try {
+        const parsed = endpoint.body ? JSON.parse(endpoint.body) : {}
+        for (const field of endpoint.formFields) {
+          const val = field.key === key ? value : (newValues[field.key] || "")
+          if (field.nested) {
+            if (!parsed[field.nested]) parsed[field.nested] = {}
+            parsed[field.nested][field.key] = field.type === "number" ? (parseFloat(val) || 0) : val
+          } else {
+            parsed[field.key] = field.type === "number" ? (parseFloat(val) || 0) : val
+          }
+        }
+        setBodyValue(JSON.stringify(parsed, null, 2))
+      } catch {
+        // ignore
+      }
+    },
+    [formValues, endpoint.formFields, endpoint.body]
+  )
+
+  const fullUrl = buildUrl(baseUrl, endpoint, formValues)
 
   const copyToClipboard = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text)
@@ -86,8 +135,16 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
     }
   }
 
-  const curlCommand = buildCurl(endpoint, baseUrl, apiKey, bodyValue)
-  const isInfoOnly = !!(endpoint as ApiEndpoint & { isInfoOnly?: boolean }).isInfoOnly
+  const isInfoOnly = !!endpoint.isInfoOnly
+  const codeExamples = endpoint.codeExamples || []
+  const webhookPayloads = endpoint.webhookPayloads || []
+
+  const getCodeWithKey = (code: string) => {
+    if (apiKey) {
+      return code.replace(/SUA_PUBLIC_KEY/g, apiKey)
+    }
+    return code
+  }
 
   return (
     <div id={endpoint.id} className="scroll-mt-4">
@@ -174,6 +231,36 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
           </code>
         </div>
 
+        {/* Form Fields */}
+        {endpoint.formFields && endpoint.formFields.length > 0 && !isInfoOnly && (
+          <div className="px-5 py-4 border-b border-border">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+              Parametros
+            </span>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {endpoint.formFields.map((field) => (
+                <div key={field.key} className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor={`${endpoint.id}-${field.key}`}
+                    className="text-xs font-medium text-foreground"
+                  >
+                    {field.label}
+                  </label>
+                  <input
+                    id={`${endpoint.id}-${field.key}`}
+                    type={field.type === "number" ? "text" : "text"}
+                    inputMode={field.type === "number" ? "decimal" : "text"}
+                    placeholder={field.placeholder}
+                    value={formValues[field.key] || ""}
+                    onChange={(e) => updateBodyFromForm(field.key, e.target.value)}
+                    className="rounded-lg bg-muted border border-border px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Headers */}
         {endpoint.headers.length > 0 && (
           <div className="px-5 py-3 border-b border-border">
@@ -221,47 +308,12 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
           </div>
         )}
 
-        {/* Query Params */}
-        {endpoint.queryParams && endpoint.queryParams.length > 0 && (
-          <div className="px-5 py-3 border-b border-border">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Query Parameters
-            </span>
-            <div className="mt-2 rounded-lg bg-muted overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/50">
-                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
-                      Parameter
-                    </th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
-                      Example
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {endpoint.queryParams.map((qp, i) => (
-                    <tr key={i} className="border-b border-border/30 last:border-0">
-                      <td className="px-3 py-2 font-mono text-xs text-foreground">
-                        {qp.key}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                        {qp.value}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Body */}
-        {endpoint.body && (
+        {/* Body (JSON textarea) */}
+        {endpoint.body && !isInfoOnly && (
           <div className="px-5 py-3 border-b border-border">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {isInfoOnly ? "Exemplo de Payload" : "Request Body"}
+                Request Body (JSON)
               </span>
               <button
                 onClick={() => copyToClipboard(bodyValue, "body")}
@@ -275,44 +327,99 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
                 )}
               </button>
             </div>
-            {isInfoOnly ? (
-              <pre className="rounded-lg bg-[hsl(213,60%,10%)] p-3 text-xs font-mono text-[hsl(210,20%,80%)] overflow-x-auto whitespace-pre-wrap">
-                {bodyValue}
-              </pre>
-            ) : (
-              <textarea
-                value={bodyValue}
-                onChange={(e) => setBodyValue(e.target.value)}
-                rows={Math.min(bodyValue.split("\n").length + 1, 20)}
-                className="w-full rounded-lg bg-muted p-3 text-sm font-mono text-foreground resize-y border border-border focus:outline-none focus:ring-1 focus:ring-ring"
-                spellCheck={false}
-              />
-            )}
+            <textarea
+              value={bodyValue}
+              onChange={(e) => setBodyValue(e.target.value)}
+              rows={Math.min(bodyValue.split("\n").length + 1, 20)}
+              className="w-full rounded-lg bg-muted p-3 text-sm font-mono text-foreground resize-y border border-border focus:outline-none focus:ring-1 focus:ring-ring"
+              spellCheck={false}
+            />
           </div>
         )}
 
-        {/* cURL - only for non-info endpoints */}
-        {!isInfoOnly && (
+        {/* Webhook Payloads */}
+        {webhookPayloads.length > 0 && (
           <div className="px-5 py-3 border-b border-border">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                cURL
-              </span>
-              <button
-                onClick={() => copyToClipboard(curlCommand, "curl")}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Copy cURL"
-              >
-                {copied === "curl" ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-500" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-              </button>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+              Exemplos de Payload
+            </span>
+            <div className="flex flex-col gap-4">
+              {webhookPayloads.map((wp, idx) => (
+                <div key={idx}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-foreground">{wp.title}</span>
+                    <button
+                      onClick={() => copyToClipboard(wp.payload, `wp-${idx}`)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={`Copy ${wp.title}`}
+                    >
+                      {copied === `wp-${idx}` ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                  <pre className="rounded-lg bg-[hsl(213,60%,10%)] p-4 text-xs font-mono text-[hsl(210,20%,80%)] overflow-x-auto whitespace-pre-wrap">
+                    {wp.payload}
+                  </pre>
+                </div>
+              ))}
             </div>
-            <pre className="rounded-lg bg-[hsl(213,60%,10%)] p-3 text-xs font-mono text-[hsl(210,20%,80%)] overflow-x-auto whitespace-pre-wrap break-all">
-              {curlCommand}
-            </pre>
+          </div>
+        )}
+
+        {/* Code Examples - Multi-language tabs */}
+        {codeExamples.length > 0 && (
+          <div className="px-5 py-3 border-b border-border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Exemplos de Codigo
+              </span>
+              {codeExamples[activeCodeTab] && (
+                <button
+                  onClick={() =>
+                    copyToClipboard(
+                      getCodeWithKey(codeExamples[activeCodeTab].code),
+                      `code-${activeCodeTab}`
+                    )
+                  }
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Copy code"
+                >
+                  {copied === `code-${activeCodeTab}` ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Language Tabs */}
+            <div className="flex gap-0 rounded-t-lg overflow-hidden border border-b-0 border-[hsl(213,50%,20%)]">
+              {codeExamples.map((example, idx) => (
+                <button
+                  key={example.language}
+                  onClick={() => setActiveCodeTab(idx)}
+                  className={cn(
+                    "px-3 py-2 text-xs font-medium transition-colors border-r border-[hsl(213,50%,20%)] last:border-r-0",
+                    activeCodeTab === idx
+                      ? "bg-[hsl(213,60%,10%)] text-[hsl(207,90%,70%)]"
+                      : "bg-[hsl(213,55%,15%)] text-[hsl(210,20%,55%)] hover:text-[hsl(210,20%,75%)] hover:bg-[hsl(213,55%,13%)]"
+                  )}
+                >
+                  {example.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Code Block */}
+            {codeExamples[activeCodeTab] && (
+              <pre className="rounded-b-lg border border-t-0 border-[hsl(213,50%,20%)] bg-[hsl(213,60%,10%)] p-4 text-xs font-mono text-[hsl(210,20%,80%)] overflow-x-auto whitespace-pre-wrap">
+                {getCodeWithKey(codeExamples[activeCodeTab].code)}
+              </pre>
+            )}
           </div>
         )}
 
@@ -373,35 +480,18 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
   )
 }
 
-function buildUrl(baseUrl: string, endpoint: ApiEndpoint): string {
-  let url = `${baseUrl}${endpoint.path}`
+function buildUrl(baseUrl: string, endpoint: ApiEndpoint, formValues?: Record<string, string>): string {
+  let path = endpoint.path
+
+  // Replace :transactionId in path if form value exists
+  if (formValues?.transactionId) {
+    path = path.replace(":transactionId", formValues.transactionId)
+  }
+
+  let url = `${baseUrl}${path}`
   if (endpoint.queryParams && endpoint.queryParams.length > 0) {
     const params = endpoint.queryParams.map((qp) => `${qp.key}=${qp.value}`).join("&")
     url += `?${params}`
   }
   return url
-}
-
-function buildCurl(
-  endpoint: ApiEndpoint,
-  baseUrl: string,
-  apiKey: string,
-  body: string
-): string {
-  const url = buildUrl(baseUrl, endpoint)
-  let curl = `curl -X ${endpoint.method} '${url}'`
-
-  for (const h of endpoint.headers) {
-    if (h.key === "Authorization" && apiKey) {
-      curl += ` \\\n  -H '${h.key}: Bearer ${apiKey}'`
-    } else {
-      curl += ` \\\n  -H '${h.key}: ${h.value}'`
-    }
-  }
-
-  if (body && ["POST", "PUT", "PATCH"].includes(endpoint.method)) {
-    curl += ` \\\n  -d '${body.replace(/\n/g, "").replace(/\s+/g, " ")}'`
-  }
-
-  return curl
 }
