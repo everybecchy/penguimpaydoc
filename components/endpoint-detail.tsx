@@ -86,8 +86,6 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
     setResponseTime(null)
     setShowResponse(true)
 
-    const startTime = performance.now()
-
     try {
       const headers: Record<string, string> = {}
       for (const h of endpoint.headers) {
@@ -98,34 +96,46 @@ export function EndpointDetail({ endpoint, baseUrl, apiKey, onApiKeyChange }: En
         }
       }
 
-      const options: RequestInit = {
+      const proxyBody: Record<string, unknown> = {
+        url: fullUrl,
         method: endpoint.method,
         headers,
       }
 
       if (endpoint.body && ["POST", "PUT", "PATCH"].includes(endpoint.method)) {
-        options.body = bodyValue
+        proxyBody.requestBody = bodyValue
       }
 
-      const res = await fetch(fullUrl, options)
-      const endTime = performance.now()
-      setResponseTime(Math.round(endTime - startTime))
-      setResponseStatus(res.status)
+      const res = await fetch("/api/proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(proxyBody),
+      })
 
-      const text = await res.text()
-      try {
-        const json = JSON.parse(text)
-        setResponse(JSON.stringify(json, null, 2))
-      } catch {
-        setResponse(text)
+      const proxyData = await res.json()
+
+      if (proxyData.error && !proxyData.status) {
+        // Proxy-level error
+        setResponseStatus(res.status)
+        setResponseTime(proxyData.time || 0)
+        setResponse(JSON.stringify(proxyData, null, 2))
+      } else {
+        // Successful proxy response
+        setResponseStatus(proxyData.status)
+        setResponseTime(proxyData.time || 0)
+        try {
+          const json = JSON.parse(proxyData.body)
+          setResponse(JSON.stringify(json, null, 2))
+        } catch {
+          setResponse(proxyData.body)
+        }
       }
     } catch (err) {
-      const endTime = performance.now()
-      setResponseTime(Math.round(endTime - startTime))
       setResponseStatus(0)
+      setResponseTime(0)
       setResponse(
         JSON.stringify(
-          { error: "Request failed", message: err instanceof Error ? err.message : "Network error or CORS issue" },
+          { error: "Request failed", message: err instanceof Error ? err.message : "Network error" },
           null,
           2
         )
